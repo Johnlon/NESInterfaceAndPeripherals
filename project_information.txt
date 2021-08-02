@@ -1,8 +1,8 @@
-<Application Description for Project Goes Here>
+<NESInterfaceAndPeripherals>
 
 Project Owner(s):
 Author(s):
-Hardware Platform:
+Hardware Platform: PIC
 Debuggers Used:
 Programmers Used:
 MPLAB Version:

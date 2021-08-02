@@ -24,7 +24,7 @@ CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}
 
 
 # Project Name
-PROJECTNAME=seven_segment_driver.X
+PROJECTNAME=NESInterfaceAndPeripherals.X
 
 # Active Configuration
 DEFAULTCONF=XC8_PIC16F18446
