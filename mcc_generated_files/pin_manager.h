@@ -205,25 +205,25 @@
 #define DATA_0_SetAnalogMode()      do { ANSELBbits.ANSB5 = 1; } while(0)
 #define DATA_0_SetDigitalMode()     do { ANSELBbits.ANSB5 = 0; } while(0)
 
-// get/set NU2 aliases
-#define NU2_TRIS                 TRISBbits.TRISB6
-#define NU2_LAT                  LATBbits.LATB6
-#define NU2_PORT                 PORTBbits.RB6
-#define NU2_WPU                  WPUBbits.WPUB6
-#define NU2_OD                   ODCONBbits.ODCB6
-#define NU2_ANS                  ANSELBbits.ANSB6
-#define NU2_SetHigh()            do { LATBbits.LATB6 = 1; } while(0)
-#define NU2_SetLow()             do { LATBbits.LATB6 = 0; } while(0)
-#define NU2_Toggle()             do { LATBbits.LATB6 = ~LATBbits.LATB6; } while(0)
-#define NU2_GetValue()           PORTBbits.RB6
-#define NU2_SetDigitalInput()    do { TRISBbits.TRISB6 = 1; } while(0)
-#define NU2_SetDigitalOutput()   do { TRISBbits.TRISB6 = 0; } while(0)
-#define NU2_SetPullup()          do { WPUBbits.WPUB6 = 1; } while(0)
-#define NU2_ResetPullup()        do { WPUBbits.WPUB6 = 0; } while(0)
-#define NU2_SetPushPull()        do { ODCONBbits.ODCB6 = 0; } while(0)
-#define NU2_SetOpenDrain()       do { ODCONBbits.ODCB6 = 1; } while(0)
-#define NU2_SetAnalogMode()      do { ANSELBbits.ANSB6 = 1; } while(0)
-#define NU2_SetDigitalMode()     do { ANSELBbits.ANSB6 = 0; } while(0)
+// get/set NU aliases
+#define NU_TRIS                 TRISBbits.TRISB6
+#define NU_LAT                  LATBbits.LATB6
+#define NU_PORT                 PORTBbits.RB6
+#define NU_WPU                  WPUBbits.WPUB6
+#define NU_OD                   ODCONBbits.ODCB6
+#define NU_ANS                  ANSELBbits.ANSB6
+#define NU_SetHigh()            do { LATBbits.LATB6 = 1; } while(0)
+#define NU_SetLow()             do { LATBbits.LATB6 = 0; } while(0)
+#define NU_Toggle()             do { LATBbits.LATB6 = ~LATBbits.LATB6; } while(0)
+#define NU_GetValue()           PORTBbits.RB6
+#define NU_SetDigitalInput()    do { TRISBbits.TRISB6 = 1; } while(0)
+#define NU_SetDigitalOutput()   do { TRISBbits.TRISB6 = 0; } while(0)
+#define NU_SetPullup()          do { WPUBbits.WPUB6 = 1; } while(0)
+#define NU_ResetPullup()        do { WPUBbits.WPUB6 = 0; } while(0)
+#define NU_SetPushPull()        do { ODCONBbits.ODCB6 = 0; } while(0)
+#define NU_SetOpenDrain()       do { ODCONBbits.ODCB6 = 1; } while(0)
+#define NU_SetAnalogMode()      do { ANSELBbits.ANSB6 = 1; } while(0)
+#define NU_SetDigitalMode()     do { ANSELBbits.ANSB6 = 0; } while(0)
 
 // get/set _RDADC aliases
 #define _RDADC_TRIS                 TRISBbits.TRISB7

@@ -3379,7 +3379,7 @@
       </entry>
       <entry>
          <key class="com.microchip.mcc.core.tokenManager.CustomKey" moduleName="Pin Module" name="Custom Name RB6"/>
-         <value>NU2</value>
+         <value>NU</value>
       </entry>
       <entry>
          <key class="com.microchip.mcc.core.tokenManager.CustomKey" moduleName="Pin Module" name="Custom Name RB7"/>
@@ -5936,12 +5936,12 @@
          <hash>705815084fb9cb3e86cef81cf09b3c98642de79d53a8a9153718e2ca8e62327c</hash>
       </entry>
       <entry>
-         <file>mcc_generated_files\pin_manager.h</file>
-         <hash>8588d659bf78db4a51bad312f5d1d95cc8edb5d4209b8b6950292fffeffa62b7</hash>
-      </entry>
-      <entry>
          <file>mcc_generated_files\adcc.h</file>
          <hash>ff16c73b56188bf2251c6786f3bab87029a849781a3a7a56aa66cbc2f16f9250</hash>
+      </entry>
+      <entry>
+         <file>mcc_generated_files\pin_manager.h</file>
+         <hash>6b5ae1c78848f3e98c37d442d6cb694685cf36ba77097ffdcd1bb73e74a51454</hash>
       </entry>
       <entry>
          <file>mcc_generated_files\mcc.c</file>
