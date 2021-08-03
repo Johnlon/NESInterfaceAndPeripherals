@@ -3,20 +3,37 @@
 This project is a peripheral for the SPAM-1 CPU containing a NES gamepad to parallel interface, a random number generator, some 8 bit timers and a basic sound generator.
 These are implemented using a microcontroller PIC16F18446.
 
+PIC16F18446 Datasheet: https://ww1.microchip.com/downloads/en/DeviceDoc/40001985B.pdf
+
 I'm building this module for use in a homebrew TTL CPU that I'm building called SPAM-1, and you can see the SPAM-1 git repo in my repository but also take a look at it's youtube videos and the Hackaday project. Ironically this microcontroller has vastly more power than my massive homebrew TTL CPU.
 
-FIX THIS DOCO ....
 
-The device pinout is shown below. I've labelled the pins as DIN_0-7 for the 8 bit input and SEG A-G for the segment outputs, and also DIGIT_L and DIGIT_H to select which of the to digits will be lit. The Segment signals are multiplexed on two 7 segment displays by the common cathodes of the two displays being controlled by DIGIT_L and _H.
+| PIN        | Notes |
+| ---------- | ----- |
+| VDD        | +ve   |
+| _RDNES1    | display the value of NES pad 1 on the parallel port |
+| _RDNES2    | display the value of NES pad 2 on the parallel port |
+| MCLR       | reset |
+| NES_CLK    | clk output to both NES pads |
+| NES_LATCH  | latch output to both NES pads |
+| NES_DATA_1 | data input from NES pad 1 |
+| NES_DATA_2 | data input from NES pad 2 |
+| ADCIN      | data input to ADC |
+| _RDADC     | display the value of the ADC on the paralel port |
+| NU         | not used |
+| DATA0-7    | parallel data outputs - thee are froxen during any period where one of the _RDxxx is enabled |
 
-![Pin out](pinout.png)
 
-https://ww1.microchip.com/downloads/en/DeviceDoc/40001985B.pdf
+
 
 Project Structure
 ----
 
-The user code is in [_main.c_](https://raw.githubusercontent.com/Johnlon/SevenSegmentModule/main/main.c).
+The user code is in [_main.c_](https://raw.githubusercontent.com/Johnlon/NESInterfaceAndPeripherals/main/main.c).
+
+
+UPDATE THIS DOCO ......
+
 
 This is a straightforward loop that reads the 8 bit data input and then decides which of the seven segment output bits to turn on/off to light the LED's, and also it multiplexes the two digits by applying a low to the DIGIT_L or DIGIT_H pins to select which digit is lit (low to light the digit).
 
