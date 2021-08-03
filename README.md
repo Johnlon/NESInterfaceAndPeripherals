@@ -24,7 +24,7 @@ I'm building this module for use in a homebrew TTL CPU that I'm building called 
 | DATA0-7    | parallel data outputs - thee are froxen during any period where one of the _RDxxx is enabled |
 
 
-![pinout](pinout.png)
+![pinout](pinout1.png)
 
 
 Project Structure
