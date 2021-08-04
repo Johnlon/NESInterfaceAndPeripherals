@@ -5,156 +5,138 @@
  */
 
 #include "mcc_generated_files/mcc.h"
+typedef unsigned char result_t;
 
-int readInput() {
-    // MK11 PCB layout accident
-    bool mk2 = false;
+void output(result_t out) {
+    DATA_0_LAT = (out & 1);
+    DATA_1_LAT = (out & 2) >> 1;
+    DATA_2_LAT = (out & 4) >> 2;
+    DATA_3_LAT = (out & 8) >> 3;
+    DATA_4_LAT = (out & 16) >> 4;
+    DATA_5_LAT = (out & 32) >> 5;
+    DATA_6_LAT = (out & 64) >> 6;
+    DATA_7_LAT = (out & 128) >> 7;
 
-    // MK1 DM9368 - not pic 
-    // MK2 PIC WITH WINGS BUT WIRING WRONG
-    // MK3 SKINNY 
-// #define BAD_BCB_WIRING
-    
-#ifndef BAD_BCB_WIRING
-    
-        return 
-            (DIN_0_GetValue() << 0) +
-            (DIN_1_GetValue() << 1) +
-            (DIN_2_GetValue() << 2) +
-            (DIN_3_GetValue() << 3) +
-            (DIN_4_GetValue() << 4) +
-            (DIN_5_GetValue() << 5) +
-            (DIN_6_GetValue() << 6) +
-            (DIN_7_GetValue() << 7);
-#else
-        return 
-            (DIN_0_GetValue() << 3) +
-            (DIN_1_GetValue() << 2) +
-            (DIN_2_GetValue() << 1) +
-            (DIN_3_GetValue() << 0) +
-            (DIN_4_GetValue() << 4) +
-            (DIN_5_GetValue() << 5) +
-            (DIN_6_GetValue() << 6) +
-            (DIN_7_GetValue() << 7);
-#endif
-        
-    }
-
-
-void display(int dig, int v) {
-
-    bool a; 
-    bool b;
-    bool c;
-    bool d;
-    bool e;
-    bool f;
-    bool g;
-    
-    a = b = c = d = e = f = g = false;
-
-    switch (v) {
-        case 0:
-            a = b = c = d = e = f = true;
-            break;
-        case 1:
-            b = c = true;
-            break;
-        case 2:
-            a = b = e = d = g = true;
-            break;
-        case 3:
-            a = b = c = d = g = true;
-            break;
-        case 4:
-            b = c = f = g = true;
-            break;
-        case 5:
-            a = c = d = f = g = true;
-            break;
-        case 6:
-            a = c = d = e = f = g = true;
-            break;
-        case 7:
-            a = b = c = true;
-            break;
-        case 8:
-            a = b = c = d = e = f = g = true;
-            break;
-        case 9:
-            a = b = c = d = f = g = true;
-            break;
-        case 10:
-            a = b = c = d = e = g = true;
-            break;
-        case 11:
-            c = d = e = f = g = true;
-            break;
-        case 12:
-            a = d = e = f = true;
-            break;
-        case 13:
-            b = c = d = e = g = true;
-            break;
-        case 14:
-            a = d = e = f = g = true;
-            break;
-        case 15:
-            a = e = f = g = true;
-            break;
-    }
-
-    // turn off display
-    DIGIT_L_LAT = 1; // inactive
-    DIGIT_H_LAT = 1; // inactive
-    
-    SEG_A_LAT = a;
-    SEG_B_LAT = b;
-    SEG_C_LAT = c;
-    SEG_D_LAT = d;
-    SEG_E_LAT = e;
-    SEG_F_LAT = f;
-    SEG_G_LAT = g;
-    
-    if (dig == 0) {
-        DIGIT_L_LAT = 0; // active
-    } else {
-        DIGIT_H_LAT = 0; // active
-    }
 }
 
-// make this long enough that the display is mostly on.
-void sleep() {
-    int i = 2;
-    while (i-->0) {
-        // pass
-    }
+result_t readAdc() {
+    // see https://microchipdeveloper.com/xpress:analog-read-serial-write-using-the-adcc-peripheral
+    adc_result_t result12Bit = ADCC_GetSingleConversion(ADCIN);
+    
+    // this code assumes that the reading is "left aligned" in the ADRESH and ADRESL registers.
+    // this is a setting in the ADC section of the code configurator.
+    // this automatically put the most significant 8 bits into the ADRESH reg.
+    return ADRESH;
 }
 
-/*
-                         Main application
+/**
+ * 
+ * @param nes1
+ * @param nes2
  */
-#define LOWER 0
-#define UPPER 1
+void readNesInput(result_t* nes1, result_t* nes2) {
+    // see https://tresi.github.io/nes/ for signalling logic
+
+    NES_CLK_SetLow();
+
+    NES_LATCH_SetHigh();
+    NES_LATCH_SetLow();
+    unsigned int nes1_a = NES_DATA1_GetValue();
+    unsigned int nes2_a = NES_DATA2_GetValue();
+
+    NES_CLK_SetHigh();
+    NES_CLK_SetLow();
+    unsigned int nes1_b = NES_DATA1_GetValue();
+    unsigned int nes2_b = NES_DATA2_GetValue();
+
+    NES_CLK_SetHigh();
+    NES_CLK_SetLow();
+    unsigned int nes1_select = NES_DATA1_GetValue();
+    unsigned int nes2_select = NES_DATA2_GetValue();
+
+    NES_CLK_SetHigh();
+    NES_CLK_SetLow();
+    unsigned int nes1_start = NES_DATA1_GetValue();
+    unsigned int nes2_start = NES_DATA2_GetValue();
+
+    NES_CLK_SetHigh();
+    NES_CLK_SetLow();
+    unsigned int nes1_up = NES_DATA1_GetValue();
+    unsigned int nes2_up = NES_DATA2_GetValue();
+
+    NES_CLK_SetHigh();
+    NES_CLK_SetLow();
+    unsigned int nes1_down = NES_DATA1_GetValue();
+    unsigned int nes2_down = NES_DATA2_GetValue();
+
+    NES_CLK_SetHigh();
+    NES_CLK_SetLow();
+    unsigned int nes1_left = NES_DATA1_GetValue();
+    unsigned int nes2_left = NES_DATA2_GetValue();
+
+    NES_CLK_SetHigh();
+    NES_CLK_SetLow();
+    unsigned int nes1_right = NES_DATA1_GetValue();
+    unsigned int nes2_right = NES_DATA2_GetValue();
+
+    *nes1 = (result_t)(
+            (nes1_a << 7) +
+            (nes1_b << 6) +
+            (nes1_select << 5) +
+            (nes1_start << 4) +
+            (nes1_up << 3) +
+            (nes1_down << 2) +
+            (nes1_left << 1) +
+            (nes1_right << 0)
+            );
+
+    *nes2 = (result_t)(
+            (nes2_a << 7) +
+            (nes2_b << 6) +
+            (nes2_select << 5) +
+            (nes2_start << 4) +
+            (nes2_up << 3) +
+            (nes2_down << 2) +
+            (nes2_left << 1) +
+            (nes2_right << 0)
+            );
+}
+
+result_t readRand() {
+    result_t r = (result_t)(rand() % 256);
+    return r;
+}
 
 void main(void) {
     SYSTEM_Initialize();
 
+    result_t nes1;
+    result_t nes2;
+    readNesInput(&nes1, &nes2);
+
+    result_t adc = readAdc();
+    result_t rnd = readRand();
+
     while (1) {
-        
-        unsigned int sample = readInput();
 
-        // Add your application code
-        display(LOWER, sample & 0x0f);
-        sleep();
-        __delay_us(500);
+        if (!_RDADC_GetValue()) {
+            output(adc);
+        } else if (!_RDNES1_GetValue()) {
+            output(nes1);
+        } else if (!_RDNES2_GetValue()) {
+            output(nes2);
+        } else if (!_RDRAND_GetValue()) {
+            output(rnd);
+        } 
         
-        readInput();
+        readNesInput(&nes1, &nes2);
+        adc = readAdc();
+        rnd = readRand();
 
-        display(UPPER, sample >> 4);
-        sleep();
-        __delay_us(500);
-    
+        output(rnd);
+        
+        __delay_us(1);
+
     }
 }
 
