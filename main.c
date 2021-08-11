@@ -8,135 +8,112 @@
 typedef unsigned char result_t;
 
 void output(result_t out) {
-    DATA_0_LAT = (out & 1);
-    DATA_1_LAT = (out & 2) >> 1;
-    DATA_2_LAT = (out & 4) >> 2;
-    DATA_3_LAT = (out & 8) >> 3;
-    DATA_4_LAT = (out & 16) >> 4;
-    DATA_5_LAT = (out & 32) >> 5;
-    DATA_6_LAT = (out & 64) >> 6;
-    DATA_7_LAT = (out & 128) >> 7;
+    RAND_0_LAT = (out & 1);
+    RAND_1_LAT = (out & 2) >> 1;
+    RAND_2_LAT = (out & 4) >> 2;
+    RAND_3_LAT = (out & 8) >> 3;
+    RAND_4_LAT = (out & 16) >> 4;
+    RAND_5_LAT = (out & 32) >> 5;
+    RAND_6_LAT = (out & 64) >> 6;
+    RAND_7_LAT = (out & 128) >> 7;
 
 }
 
-result_t readAdc() {
-    // see https://microchipdeveloper.com/xpress:analog-read-serial-write-using-the-adcc-peripheral
-    adc_result_t result12Bit = ADCC_GetSingleConversion(ADCIN);
-    
-    // this code assumes that the reading is "left aligned" in the ADRESH and ADRESL registers.
-    // this is a setting in the ADC section of the code configurator.
-    // this automatically put the most significant 8 bits into the ADRESH reg.
-    return ADRESH;
+void pause() {
+    //__delay_us(1);
 }
+//
+//void nesInit() {
+//    // set clock to inactive low state before starting transfer
+//    NES_CLK_SetLow();
+//    NES_LATCH_SetLow();
+//}
+//
+//void nesLatch() {
+//    // load controller's 4021 shift register on +ve edge of latch
+//    NES_LATCH_SetHigh();
+//    NES_LATCH_SetLow();
+//}
+//
+//void nesClock() {
+//    NES_CLK_SetHigh();
+//    NES_CLK_SetLow();
+//}
+//
+//void rcvInit() {
+//    // set clock to inactive low state before starting transfer
+//    OUT_CLK_SetLow();
+//    OUT_LATCH_SetLow();    
+//}
+//
+//void rcvLatch() {
+//    // 74595 latches data into output reg on +ve edge
+//    // https://assets.nexperia.com/documents/data-sheet/74HC_HCT595.pdf
+//    OUT_LATCH_SetHigh();
+//    OUT_LATCH_SetLow();    
+//}
+//
+//void rcvClock() {
+//    OUT_CLK_SetHigh();
+//    OUT_CLK_SetLow();
+//}
+//
+//// see https://tresi.github.io/nes/ for signalling logic
+//void nesTransfer() {
+//   
+//    nesInit();
+//    rcvInit();
+//    
+//    nesLatch();
+//    rcvClock();
+//    
+//    nesClock();
+//    rcvClock();
+//    
+//    nesClock();
+//    rcvClock();
+//    
+//    nesClock();
+//    rcvClock();
+//    
+//    nesClock();
+//    rcvClock();
+//    
+//    nesClock();
+//    rcvClock();
+//    
+//    nesClock();
+//    rcvClock();
+//    
+//    nesClock();
+//    rcvClock();
+//
+//    rcvLatch();
+//}
 
-/**
- * 
- * @param nes1
- * @param nes2
- */
-void readNesInput(result_t* nes1, result_t* nes2) {
-    // see https://tresi.github.io/nes/ for signalling logic
-
-    NES_CLK_SetLow();
-
-    NES_LATCH_SetHigh();
-    NES_LATCH_SetLow();
-    unsigned int nes1_a = NES_DATA1_GetValue();
-    unsigned int nes2_a = NES_DATA2_GetValue();
-
-    NES_CLK_SetHigh();
-    NES_CLK_SetLow();
-    unsigned int nes1_b = NES_DATA1_GetValue();
-    unsigned int nes2_b = NES_DATA2_GetValue();
-
-    NES_CLK_SetHigh();
-    NES_CLK_SetLow();
-    unsigned int nes1_select = NES_DATA1_GetValue();
-    unsigned int nes2_select = NES_DATA2_GetValue();
-
-    NES_CLK_SetHigh();
-    NES_CLK_SetLow();
-    unsigned int nes1_start = NES_DATA1_GetValue();
-    unsigned int nes2_start = NES_DATA2_GetValue();
-
-    NES_CLK_SetHigh();
-    NES_CLK_SetLow();
-    unsigned int nes1_up = NES_DATA1_GetValue();
-    unsigned int nes2_up = NES_DATA2_GetValue();
-
-    NES_CLK_SetHigh();
-    NES_CLK_SetLow();
-    unsigned int nes1_down = NES_DATA1_GetValue();
-    unsigned int nes2_down = NES_DATA2_GetValue();
-
-    NES_CLK_SetHigh();
-    NES_CLK_SetLow();
-    unsigned int nes1_left = NES_DATA1_GetValue();
-    unsigned int nes2_left = NES_DATA2_GetValue();
-
-    NES_CLK_SetHigh();
-    NES_CLK_SetLow();
-    unsigned int nes1_right = NES_DATA1_GetValue();
-    unsigned int nes2_right = NES_DATA2_GetValue();
-
-    *nes1 = (result_t)(
-            (nes1_a << 7) +
-            (nes1_b << 6) +
-            (nes1_select << 5) +
-            (nes1_start << 4) +
-            (nes1_up << 3) +
-            (nes1_down << 2) +
-            (nes1_left << 1) +
-            (nes1_right << 0)
-            );
-
-    *nes2 = (result_t)(
-            (nes2_a << 7) +
-            (nes2_b << 6) +
-            (nes2_select << 5) +
-            (nes2_start << 4) +
-            (nes2_up << 3) +
-            (nes2_down << 2) +
-            (nes2_left << 1) +
-            (nes2_right << 0)
-            );
-}
-
-result_t readRand() {
+void randUpdate() {
     result_t r = (result_t)(rand() % 256);
-    return r;
+    output(r);
 }
+
+
+
+void i2cDemo(); 
+void i2cInit(); 
+uint16_t nes_get_state();
 
 void main(void) {
     SYSTEM_Initialize();
 
-    result_t nes1;
-    result_t nes2;
-    readNesInput(&nes1, &nes2);
-
-    result_t adc = readAdc();
-    result_t rnd = readRand();
-
+    i2cInit();
+    
     while (1) {
 
-        if (!_RDADC_GetValue()) {
-            output(adc);
-        } else if (!_RDNES1_GetValue()) {
-            output(nes1);
-        } else if (!_RDNES2_GetValue()) {
-            output(nes2);
-        } else if (!_RDRAND_GetValue()) {
-            output(rnd);
-        } 
-        
-        readNesInput(&nes1, &nes2);
-        adc = readAdc();
-        rnd = readRand();
-
-        output(rnd);
-        
-        __delay_us(1);
-
+        //nesTransfer();
+        //i2cDemo(); 
+//        randUpdate();
+        uint16_t state = nes_get_state();
+        uint16_t x = state;
     }
 }
 
