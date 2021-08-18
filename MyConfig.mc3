@@ -1923,7 +1923,7 @@
       </entry>
       <entry>
          <key class="com.microchip.mcc.core.tokenManager.CustomKey" moduleName="Pin Module" name="Custom Name RA4"/>
-         <value>dddd</value>
+         <value>NUA4</value>
       </entry>
       <entry>
          <key class="com.microchip.mcc.core.tokenManager.SettingKey" moduleName="Pin Module" registerAlias="IOCCF" settingAlias="IOCCF2"/>
@@ -4609,7 +4609,7 @@
       </entry>
       <entry>
          <file>mcc_generated_files\pin_manager.h</file>
-         <hash>afd8bf7b768b63411279b04cbb692f58717a3999c6b1646a2ddec1e6c719c561</hash>
+         <hash>94041a245b270dbad64a4ae90a4ae405eb32ed8c8f8ccfbc734951ff33e1ad43</hash>
       </entry>
       <entry>
          <file>mcc_generated_files\mcc.c</file>

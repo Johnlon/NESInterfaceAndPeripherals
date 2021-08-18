@@ -85,7 +85,7 @@ uint8_t readSCL() {
 }
 
 void dly(){
-    __delay_us(10);
+    __delay_us(1);
 }
 
 void dlyLong(){
@@ -94,6 +94,8 @@ void dlyLong(){
 
 //  setup the pin types OR do this using the MPLab MCC tool.
 void i2cSetup() {
+    __delay_us(10000); 
+
     SCL_SetDigitalOutput();
     SDA_SetDigitalOutput();
     SCL_SetOpenDrain();
