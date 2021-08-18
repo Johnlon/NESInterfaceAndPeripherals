@@ -1,4 +1,11 @@
 #include "mcc_generated_files/mcc.h"
+#include "i2c.h"
+#define I2C_WRITE 0
+#define I2C_READ 1
+
+#define CONTROLLER_ADDR (0x52 << 1)
+
+
 
 // https://github.com/theisolinearchip/nesmini_usb_adapter
 // http://www.bitbanging.space/posts/bitbang-i2c
@@ -37,14 +44,14 @@
 // the HW and the simulator I'm leaving it like this.
 
 // to use this then open the PIC MPLab pin configurator and name two pins as SDA and SCL.
-
-// I2C protocol bits
-uint8_t forWrite(uint8_t val) {
-    return (uint8_t)(val << 1);
-}
-uint8_t forRead(uint8_t val) {
-    return (uint8_t)(val << 1 | 0x01);
-}
+//
+//// I2C protocol bits
+//uint8_t forWrite(uint8_t val) {
+//    return (uint8_t)(val << 1);
+//}
+//uint8_t forRead(uint8_t val) {
+//    return (uint8_t)(val << 1 | 0x01);
+//}
 
 // data line
 #define SDA_ON (SDA_LAT=1)
@@ -54,13 +61,27 @@ uint8_t forRead(uint8_t val) {
 #define SCL_ON (SCL_LAT=1)
 #define SCL_OFF (SCL_LAT=0)
 
-// Ack is explained here .. https://learn.sparkfun.com/tutorials/i2c/all
+/* Read Ack/Nack
+ * https://learn.sparkfun.com/tutorials/i2c/all
+ * If the receiving device does not pull the SDA line low before the 9th clock pulse, 
+ * it can be inferred that the receiving device either did not receive the data 
+ * or did not know how to parse the message. In that case, the exchange halts, 
+ * and it's up to the controller of the system to decide how to proceed. 
+*/
+/* TI document .. https://www.ti.com/lit/an/slva704/slva704.pdf?ts=1629155123445#:~:text=I2C%20communication%20with%20this%20device,high%20defines%20a%20START%20condition.
+When the SDA line remains high during the ACK/NACK-related clock period, this is interpreted as a NACK. 
+There are several conditions that lead to the generation of a NACK:
+1. The receiver is unable to receive or transmit because it is performing some real-time function and is
+not ready to start communication with the master.
+2. During the transfer, the receiver gets data or commands that it does not understand.
+3. During the transfer, the receiver cannot receive any more data bytes.
+4. A master-receiver is done reading data and indicates this to the slave through a NACK
+ */
 uint8_t readSDA() {
-    // read the state of the SDA pin. if it's low then then the slave is pulling it low
-    
-    SDA_TRIS = 1; 
-    bool val = SDA_PORT;    // Acknowledge bit
-    SDA_TRIS=0;
+    // read the state of the SDA pin. if it's low then then the slave is pulling it low    
+    SDA_TRIS = 1; // turn pin to an input
+    bool val = SDA_PORT;    // read Acknowledge bit
+    SDA_TRIS=0; // turn pin to an output
     return val;
 }
 
@@ -80,7 +101,7 @@ inline void dlyLong(){
 }
 
 //  setup the pin types OR do this using the MPLab MCC tool.
-void i2cInit() {
+void i2cSetup() {
     SCL_SetDigitalOutput();
     SDA_SetDigitalOutput();
     SCL_SetOpenDrain();
@@ -91,29 +112,38 @@ void i2cInit() {
     SDA_ON;
 }
 
-/*  i2c start sequence */
+/* i2c start sequence.
+ * A high-to-low transition on the SDA line while the SCL is high defines a START condition 
+ */
 void i2cStart(){
     SDA_ON;
     dly();
     SCL_ON;
     dly();
+    
     SDA_OFF;
     dly();
     SCL_OFF;
     dly();
 }
 
-/*  i2c stop sequence */
+void i2cClockStretch() {
+    // added clock stretching as shown here https://github.com/theisolinearchip/nesmini_usb_adapter/blob/main/i2cattiny85/i2cattiny85.c
+    // if it's being pulled low but slave then wait
+    do{
+    }while(readSCL() == 0);  
+}
+
+/* i2c stop sequence.
+ * A low-to-high transition on the SDA line while the SCL is high defines a STOP condition.
+*/
 void i2cStop(){
     SDA_OFF;
     dly();
     SCL_ON;
     dly();
     
-    do{
-        SCL_ON; /// time waste
-    }while(readSCL() == 0);  //added clock stretching as shown here https://github.com/theisolinearchip/nesmini_usb_adapter/blob/main/i2cattiny85/i2cattiny85.c
-        
+    i2cClockStretch();
     dly();
     
     SDA_ON;
@@ -123,20 +153,16 @@ void i2cStop(){
 void i2cWriteBit(uint8_t bit){
     if (bit) SDA_ON;
     else SDA_OFF;
-    dly();
-      
+    dly();  
     SCL_ON; 
-    do{
-       //added clock stretching as shown here https://github.com/theisolinearchip/nesmini_usb_adapter/blob/main/i2cattiny85/i2cattiny85.c   
-    }while(readSCL() == 0);  
+    dly();
+    
+    i2cClockStretch();
     dly();
     
     SCL_OFF;
     dly();
-
-
 }
-
 
 /* Transmit 8 bit data to slave */
 bool i2cWrite(uint8_t dat){
@@ -151,8 +177,11 @@ bool i2cWrite(uint8_t dat){
     }
     
     // on 9th clock read back in the ack bit
-    SDA_ON; // port goes high
-    SCL_ON;
+    SDA_ON; // port goes high - SDA is released
+    dly();
+    
+    // if receiver is acking by pulling SDA low then it must do so before the clock goes high and then remain stable during the high.
+    SCL_ON; 
     dly();
     
     bool ack = readSDA();    // Acknowledge bit
@@ -168,9 +197,7 @@ uint8_t i2cReadBit(){
     SCL_ON;
     dly();
 
-    do{
-        // pause
-    }while(readSCL() == 0);  //clock stretching
+    i2cClockStretch();
     dly();
     
     uint8_t bit = readSDA();
@@ -181,7 +208,9 @@ uint8_t i2cReadBit(){
     return bit; 
 }
 
-// low to ack ie nack
+// when reading send a low to ack to the slave that data has been received ie nack
+// if nack is low then a low will be sent to the slave - this is an ack.
+// during a read an ack (low) should be sent to signal the desire to read more.)
 uint8_t i2cRead(bool nack){
     uint8_t dat = 0;
     SDA_ON;
@@ -205,9 +234,9 @@ uint8_t i2cRead(bool nack){
 
 void i2cDemo() {
     
-    uint8_t ADDR=0x52;
+    uint8_t ADDR=0x52 << 1;
     i2cStart();
-    i2cWrite(forWrite(ADDR)); // Transfer the slave address plus 
+    i2cWrite(ADDR | I2C_WRITE); // Transfer the slave address plus 
     dly();
 
     i2cWrite(0xaa); // Transfer the slave address plus 
@@ -220,16 +249,9 @@ void i2cDemo() {
     i2cStop();
 }
 
-
-#define NES_ADDR 0x52
-// A4
-#define NES_I2C_ADDRESS_WRITE (NES_ADDR << 1)
-// A5
-#define NES_I2C_ADDRESS_READ  ((NES_ADDR << 1) | 1)
-
-
 // see https://github.com/theisolinearchip/nesmini_usb_adapter/blob/main/nesminicontrollerdrv.c
-void snes_init() {
+// https://github.com/djtulan/nunchuk64/blob/master/src/controller.c
+void controller_init() {
 
 	// According to http://wiibrew.org/wiki/Wiimote/Extension_Controllers the way to initialize the
 	// SNES Mini Controller is by writting 0x55 to 0xF0 and 0x00 to 0xFB BUT it seems it works only
@@ -238,26 +260,126 @@ void snes_init() {
     // SEE EXPLANATION HERE THAT THIS DISABLED ENCRYPTION : https://wiibrew.org/wiki/Wiimote/Extension_Controllers
     
 	i2cStart();
-	i2cWrite(NES_I2C_ADDRESS_WRITE); // 0x52
+	i2cWrite(CONTROLLER_ADDR | I2C_WRITE); // 0x52
 	i2cWrite(0xF0); // "address"
 	i2cWrite(0x55); // info to write
 	i2cStop();
-    dly(); // the nes mini controller seems to work fine without this delay
-
+    dly(); 
+    
     i2cStart();
-	i2cWrite(NES_I2C_ADDRESS_WRITE); // 0x52
+	i2cWrite(CONTROLLER_ADDR | I2C_WRITE); // 0x52
 	i2cWrite(0xFB); // "address"
 	i2cWrite(0x00); // info to write
 	i2cStop();
-    dly(); // the nes mini controller seems to work fine without this delay
-
+    dly(); 
+    
+    i2cStart();
+	i2cWrite(CONTROLLER_ADDR | I2C_WRITE); // 0x52
+	i2cWrite(0xFE); // "address"
+	i2cWrite(0x00); // info to write
+	i2cStop();
+    dly(); 
 }
 
-uint16_t nes_get_state() {
+/* https://wiibrew.org/wiki/Wiimote/Extension_Controllers
+ The key is written in 3 blocks of 6, 6, and 4 bytes.
+ */
+void controller_disable_encryption() {
+
+    i2cStart();
+	i2cWrite(CONTROLLER_ADDR | I2C_WRITE); 
+	i2cWrite(0xF0); // "address"
+	i2cWrite(0xAA); // info to write
+	i2cStop();
+    dly(); 
+    
+    i2cStart();
+	i2cWrite(CONTROLLER_ADDR | I2C_WRITE); // 0x52
+	i2cWrite(0x40); 
+    for (uint8_t i = 0; i < 6; i++)
+        i2cWrite(0x00);
+    i2cStop();
+    dly(); 
+
+    i2cStart();
+	i2cWrite(CONTROLLER_ADDR | I2C_WRITE); // 0x52
+	i2cWrite(0x40); 
+    for (uint8_t i = 0; i < 6; i++)
+        i2cWrite(0x00);
+    i2cStop();
+    dly();     
+
+    i2cStart();
+	i2cWrite(CONTROLLER_ADDR | I2C_WRITE); // 0x52
+	i2cWrite(0x40); 
+    for (uint8_t i = 0; i < 4; i++)
+        i2cWrite(0x00);
+    i2cStop();
+    dly(); 
+}
+
+/* see read_id https://github.com/djtulan/nunchuk64/blob/master/src/controller.c
+ got : 0x01 0x00 0xa4 0x20 0x00 0x01 =   ID_NES_Classic_Mini_Clone_Encrypted
+ **/
+void controller_id(uint8_t id[6]) {
+
+    i2cStart();
+	i2cWrite(CONTROLLER_ADDR | I2C_WRITE); 
+	i2cWrite(0xFA); 
+    i2cStop();
+    dly(); 
+    
+
+    i2cStart();
+	i2cWrite(CONTROLLER_ADDR | I2C_READ);
+    
+    for (char x = 0; x < 6; x++) {
+        bool allBytesRead = x >= 5;
+        
+        // send a low ack to indicate we are not finished 
+		id[x] = i2cRead(allBytesRead); // nack ("not gonna ask for more" / "stop" / "omgexplosions" when fetching the last one)
+	}
+    i2cStop();
+    dly(); 
+}
+
+uint8_t nes_get_state8() {
+    uint8_t data[2];
+    uint16_t state = nes_get_state(data);
+    uint8_t joystick = 0;
+
+    if ((state & S_UP)) {
+        joystick |= UP;
+    }
+    if ((state & S_DOWN)) {
+        joystick |= DOWN;
+    }
+    if ((state & S_LEFT)) {
+        joystick |= LEFT;
+    }
+    if ((state & S_RIGHT)) {
+        joystick |= RIGHT;
+    }
+    if ((state & S_BUTTONA)) {
+        joystick |= BUTTONA;
+    }
+    if ((state & S_BUTTONB)) {
+        joystick |= BUTTONB;
+    }
+    if ((state & S_SELECT)) {
+        joystick |= SELECT;
+    }
+    if ((state & S_START)) {
+        joystick |= START;
+    }
+    
+    return joystick;
+}
+
+uint16_t nes_get_state(uint8_t data[2]) {
 	i2cStart();
 
-	i2cWrite(NES_I2C_ADDRESS_WRITE); // write
-//	i2cWrite(0x40); // we're gonna read from 0x00
+	i2cWrite(CONTROLLER_ADDR | I2C_WRITE); // write
 	i2cWrite(0x00); // we're gonna read from 0x00
 	i2cStop();
 
@@ -265,23 +387,35 @@ uint16_t nes_get_state() {
 
 	i2cStart();
 
-	i2cWrite(NES_I2C_ADDRESS_READ); // read
+	i2cWrite(CONTROLLER_ADDR | I2C_READ); // read
 
-	// read 6 bytes, use only the last two ones
+	// Correct logic: read 6 bytes, use only the last two ones
 	// (need to "read" the first 4 bytes in order
 	// to "advance" to the last two ones)
+    
+    // HOWEVER my controllers have this bug : https://github.com/dmadison/NintendoExtensionCtrl/issues/33
+    // Need to read 8 bytes and keep the last two rather than 6 and keep the last two.
 	uint16_t state = 0;
 	uint8_t read = 0;
-	for (char x = 0; x < 6; x++) {
-        bool allBytesRead = x >= 5;
+    int controllerBytes = 8;
+	for (char x = 0; x < controllerBytes; x++) {
+        bool allBytesRead = x >= (controllerBytes-1);
         
         // send a low ack to indicate we are not finished 
 		read = i2cRead(allBytesRead); // nack ("not gonna ask for more" / "stop" / "omgexplosions" when fetching the last one)
 
-		if (x >= 4) {
-			read ^= 0xFF; // "255 - read"
+        if (x == controllerBytes-2) {
+            data[0] = read; // "upper"
+        }
+        
+        if (x == controllerBytes-1) {
+            data[1] = read; // "lower"
+        }
+	
+        if (x >= (controllerBytes-2)) {
+//			read ^= 0xFF; // "255 - read"
 			state |= read;
-			if (x == 4) state <<= 8;
+			if (x == (controllerBytes-2)) state <<= 8;
 		}
 	}
 
@@ -293,7 +427,7 @@ uint16_t nes_get_state() {
 uint16_t nes_device_id() {
 	i2cStart();
 
-	i2cWrite(NES_I2C_ADDRESS_WRITE); // write
+	i2cWrite(CONTROLLER_ADDR | I2C_WRITE); // write
 	i2cWrite(0xfa); // we're gonna read from 0x00
 	i2cStop();
 
@@ -301,7 +435,7 @@ uint16_t nes_device_id() {
 
 	i2cStart();
 
-	i2cWrite(NES_I2C_ADDRESS_READ); // read
+	i2cWrite(CONTROLLER_ADDR | I2C_READ); // read
 
 	// read 6 bytes, use only the last two ones
 	// (need to "read" the first 4 bytes in order
@@ -315,7 +449,7 @@ uint16_t nes_device_id() {
 		read = i2cRead(allBytesRead); // nack ("not gonna ask for more" / "stop" / "omgexplosions" when fetching the last one)
 
 		if (x >= 4) {
-			read ^= 0xFF; // "255 - read"
+			//read ^= 0xFF; // "255 - read"
 			state |= read;
 			if (x == 4) state <<= 8;
 		}
@@ -332,7 +466,7 @@ void i2cIdentify() {
     	dly(); 
         for (int addr = 0; addr < 127; addr++) {
             i2cStart();
-            i2cWrite(addr << 1); 
+            i2cWrite( (addr << 1) | I2C_WRITE ); 
             i2cStop();
         }
     }
@@ -343,7 +477,7 @@ void i2cIdentify() {
 // https://github.com/nyh-workshop/nesClassicController/blob/master/nesClassicController.cpp
 
 //uint8_t readNes(uint8_t data) {
-//    uint8_t addr=forRead(NES_ADDR); // low bit clear therefore write
+//    uint8_t addr=forRead(CONTROLLER_ADDR); // low bit clear therefore write
 //    
 //    start();              // send start sequence
 //    Tx(addr);             // I2C address with R/W bit clear
