@@ -10,6 +10,7 @@
 // https://github.com/theisolinearchip/nesmini_usb_adapter
 // http://www.bitbanging.space/posts/bitbang-i2c
 // https://www.robot-electronics.co.uk/i2c-tutorial
+// https://sudonull.com/post/21200-Connect-the-gamepad-from-the-Nintendo-Classic-Mini-to-the-Raspberry-pi
 
 
 // All participants on the SDA/SCL line are expected to be open collector/drain so 
@@ -42,16 +43,7 @@
 // So, instead I flip the pin to an input before sampling it.
 // In the real hardware this is probably unnecessary however since this logic is actually fine in both the
 // the HW and the simulator I'm leaving it like this.
-
 // to use this then open the PIC MPLab pin configurator and name two pins as SDA and SCL.
-//
-//// I2C protocol bits
-//uint8_t forWrite(uint8_t val) {
-//    return (uint8_t)(val << 1);
-//}
-//uint8_t forRead(uint8_t val) {
-//    return (uint8_t)(val << 1 | 0x01);
-//}
 
 // data line
 #define SDA_ON (SDA_LAT=1)
@@ -92,11 +84,11 @@ uint8_t readSCL() {
     return val;
 }
 
-inline void dly(){
+void dly(){
     __delay_us(10);
 }
 
-inline void dlyLong(){
+void dlyLong(){
     __delay_us(100);
 }
 
@@ -230,262 +222,4 @@ uint8_t i2cRead(bool nack){
 }
 
 
-// https://sudonull.com/post/21200-Connect-the-gamepad-from-the-Nintendo-Classic-Mini-to-the-Raspberry-pi
 
-void i2cDemo() {
-    
-    uint8_t ADDR=0x52 << 1;
-    i2cStart();
-    i2cWrite(ADDR | I2C_WRITE); // Transfer the slave address plus 
-    dly();
-
-    i2cWrite(0xaa); // Transfer the slave address plus 
-    dly();
-    dly();
-
-    for (int i = 0; i<256; i++) {
-        unsigned ack = i2cWrite((uint8_t)i); // Register address where we want to write
-    }
-    i2cStop();
-}
-
-// see https://github.com/theisolinearchip/nesmini_usb_adapter/blob/main/nesminicontrollerdrv.c
-// https://github.com/djtulan/nunchuk64/blob/master/src/controller.c
-void controller_init() {
-
-	// According to http://wiibrew.org/wiki/Wiimote/Extension_Controllers the way to initialize the
-	// SNES Mini Controller is by writting 0x55 to 0xF0 and 0x00 to 0xFB BUT it seems it works only
-	// with the first write. The NES Mini does not require the init, but works anyway with it
-
-    // SEE EXPLANATION HERE THAT THIS DISABLED ENCRYPTION : https://wiibrew.org/wiki/Wiimote/Extension_Controllers
-    
-	i2cStart();
-	i2cWrite(CONTROLLER_ADDR | I2C_WRITE); // 0x52
-	i2cWrite(0xF0); // "address"
-	i2cWrite(0x55); // info to write
-	i2cStop();
-    dly(); 
-    
-    i2cStart();
-	i2cWrite(CONTROLLER_ADDR | I2C_WRITE); // 0x52
-	i2cWrite(0xFB); // "address"
-	i2cWrite(0x00); // info to write
-	i2cStop();
-    dly(); 
-    
-    i2cStart();
-	i2cWrite(CONTROLLER_ADDR | I2C_WRITE); // 0x52
-	i2cWrite(0xFE); // "address"
-	i2cWrite(0x00); // info to write
-	i2cStop();
-    dly(); 
-}
-
-/* https://wiibrew.org/wiki/Wiimote/Extension_Controllers
- The key is written in 3 blocks of 6, 6, and 4 bytes.
- */
-void controller_disable_encryption() {
-
-    i2cStart();
-	i2cWrite(CONTROLLER_ADDR | I2C_WRITE); 
-	i2cWrite(0xF0); // "address"
-	i2cWrite(0xAA); // info to write
-	i2cStop();
-    dly(); 
-    
-    i2cStart();
-	i2cWrite(CONTROLLER_ADDR | I2C_WRITE); // 0x52
-	i2cWrite(0x40); 
-    for (uint8_t i = 0; i < 6; i++)
-        i2cWrite(0x00);
-    i2cStop();
-    dly(); 
-
-    i2cStart();
-	i2cWrite(CONTROLLER_ADDR | I2C_WRITE); // 0x52
-	i2cWrite(0x40); 
-    for (uint8_t i = 0; i < 6; i++)
-        i2cWrite(0x00);
-    i2cStop();
-    dly();     
-
-    i2cStart();
-	i2cWrite(CONTROLLER_ADDR | I2C_WRITE); // 0x52
-	i2cWrite(0x40); 
-    for (uint8_t i = 0; i < 4; i++)
-        i2cWrite(0x00);
-    i2cStop();
-    dly(); 
-}
-
-/* see read_id https://github.com/djtulan/nunchuk64/blob/master/src/controller.c
- got : 0x01 0x00 0xa4 0x20 0x00 0x01 =   ID_NES_Classic_Mini_Clone_Encrypted
- **/
-void controller_id(uint8_t id[6]) {
-
-    i2cStart();
-	i2cWrite(CONTROLLER_ADDR | I2C_WRITE); 
-	i2cWrite(0xFA); 
-    i2cStop();
-    dly(); 
-    
-
-    i2cStart();
-	i2cWrite(CONTROLLER_ADDR | I2C_READ);
-    
-    for (char x = 0; x < 6; x++) {
-        bool allBytesRead = x >= 5;
-        
-        // send a low ack to indicate we are not finished 
-		id[x] = i2cRead(allBytesRead); // nack ("not gonna ask for more" / "stop" / "omgexplosions" when fetching the last one)
-	}
-    i2cStop();
-    dly(); 
-}
-
-uint8_t nes_get_state8() {
-    uint8_t data[2];
-    uint16_t state = nes_get_state(data);
-    uint8_t joystick = 0;
-
-    if ((state & S_UP)) {
-        joystick |= UP;
-    }
-    if ((state & S_DOWN)) {
-        joystick |= DOWN;
-    }
-    if ((state & S_LEFT)) {
-        joystick |= LEFT;
-    }
-    if ((state & S_RIGHT)) {
-        joystick |= RIGHT;
-    }
-    if ((state & S_BUTTONA)) {
-        joystick |= BUTTONA;
-    }
-    if ((state & S_BUTTONB)) {
-        joystick |= BUTTONB;
-    }
-    if ((state & S_SELECT)) {
-        joystick |= SELECT;
-    }
-    if ((state & S_START)) {
-        joystick |= START;
-    }
-    
-    return joystick;
-}
-
-uint16_t nes_get_state(uint8_t data[2]) {
-	i2cStart();
-
-	i2cWrite(CONTROLLER_ADDR | I2C_WRITE); // write
-	i2cWrite(0x00); // we're gonna read from 0x00
-	i2cStop();
-
-    dlyLong(); 
-
-	i2cStart();
-
-	i2cWrite(CONTROLLER_ADDR | I2C_READ); // read
-
-	// Correct logic: read 6 bytes, use only the last two ones
-	// (need to "read" the first 4 bytes in order
-	// to "advance" to the last two ones)
-    
-    // HOWEVER my controllers have this bug : https://github.com/dmadison/NintendoExtensionCtrl/issues/33
-    // Need to read 8 bytes and keep the last two rather than 6 and keep the last two.
-	uint16_t state = 0;
-	uint8_t read = 0;
-    int controllerBytes = 8;
-	for (char x = 0; x < controllerBytes; x++) {
-        bool allBytesRead = x >= (controllerBytes-1);
-        
-        // send a low ack to indicate we are not finished 
-		read = i2cRead(allBytesRead); // nack ("not gonna ask for more" / "stop" / "omgexplosions" when fetching the last one)
-
-        if (x == controllerBytes-2) {
-            data[0] = read; // "upper"
-        }
-        
-        if (x == controllerBytes-1) {
-            data[1] = read; // "lower"
-        }
-	
-        if (x >= (controllerBytes-2)) {
-//			read ^= 0xFF; // "255 - read"
-			state |= read;
-			if (x == (controllerBytes-2)) state <<= 8;
-		}
-	}
-
-	i2cStop();
-
-	return state;
-}
-
-uint16_t nes_device_id() {
-	i2cStart();
-
-	i2cWrite(CONTROLLER_ADDR | I2C_WRITE); // write
-	i2cWrite(0xfa); // we're gonna read from 0x00
-	i2cStop();
-
-	dly(); // the nes mini controller seems to work fine without this delay
-
-	i2cStart();
-
-	i2cWrite(CONTROLLER_ADDR | I2C_READ); // read
-
-	// read 6 bytes, use only the last two ones
-	// (need to "read" the first 4 bytes in order
-	// to "advance" to the last two ones)
-	uint16_t state = 0;
-	uint8_t read = 0;
-	for (char x = 0; x < 6; x++) {
-        bool allBytesRead = x >= 5;
-        
-        // send a low ack to indicate we are not finished 
-		read = i2cRead(allBytesRead); // nack ("not gonna ask for more" / "stop" / "omgexplosions" when fetching the last one)
-
-		if (x >= 4) {
-			//read ^= 0xFF; // "255 - read"
-			state |= read;
-			if (x == 4) state <<= 8;
-		}
-	}
-
-	i2cStop();
-
-	return state;
-}
-
-void i2cIdentify() {
-    
-    while(1==1) {
-    	dly(); 
-        for (int addr = 0; addr < 127; addr++) {
-            i2cStart();
-            i2cWrite( (addr << 1) | I2C_WRITE ); 
-            i2cStop();
-        }
-    }
-}
-
-
-
-// https://github.com/nyh-workshop/nesClassicController/blob/master/nesClassicController.cpp
-
-//uint8_t readNes(uint8_t data) {
-//    uint8_t addr=forRead(CONTROLLER_ADDR); // low bit clear therefore write
-//    
-//    start();              // send start sequence
-//    Tx(addr);             // I2C address with R/W bit clear
-//    // need to write 00 to register 0x40
-//    Tx(0x00);             // 
-//    Tx(0x40);             // 
-//    
-//    start();              // send start sequence
-//    Tx(0);             // I2C address with R/W bit clear
-//    stop();
-//}
