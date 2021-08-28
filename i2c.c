@@ -1,11 +1,12 @@
+#include "xc.h"
 #include "mcc_generated_files/mcc.h"
 #include "i2c.h"
+#include "controller.h"
+
 #define I2C_WRITE 0
 #define I2C_READ 1
 
 #define CONTROLLER_ADDR (0x52 << 1)
-
-
 
 // https://github.com/theisolinearchip/nesmini_usb_adapter
 // http://www.bitbanging.space/posts/bitbang-i2c
@@ -45,14 +46,6 @@
 // the HW and the simulator I'm leaving it like this.
 // to use this then open the PIC MPLab pin configurator and name two pins as SDA and SCL.
 
-// data line
-#define SDA_ON (SDA_LAT=1)
-#define SDA_OFF (SDA_LAT=0)
-
-// clock line
-#define SCL_ON (SCL_LAT=1)
-#define SCL_OFF (SCL_LAT=0)
-
 /* Read Ack/Nack
  * https://learn.sparkfun.com/tutorials/i2c/all
  * If the receiving device does not pull the SDA line low before the 9th clock pulse, 
@@ -69,134 +62,111 @@ not ready to start communication with the master.
 3. During the transfer, the receiver cannot receive any more data bytes.
 4. A master-receiver is done reading data and indicates this to the slave through a NACK
  */
-uint8_t readSDA() {
+uint8_t readSDA(struct I2CPort* port) {
     // read the state of the SDA pin. if it's low then then the slave is pulling it low    
-    SDA_TRIS = 1; // turn pin to an input
-    bool val = SDA_PORT;    // read Acknowledge bit
-    SDA_TRIS=0; // turn pin to an output
+    port->sdaInput();
+    bool val = port->sdaRead();
+    port->sdaOutput();
     return val;
 }
 
-uint8_t readSCL() {    
-    SCL_TRIS=1; 
-    bool val = SCL_PORT;    // Acknowledge bit
-    SCL_TRIS=0;
+uint8_t readSCL(struct I2CPort* port) {    
+    port->sclInput();
+    bool val = port->sclRead();    // Acknowledge bit
+    port->sclOutput();
     return val;
 }
 
 void dly(){
-    __delay_us(1);
+    __delay_us(40);
 }
 
 void dlyLong(){
-    __delay_us(100);
+    __delay_us(1000);
 }
 
-//  setup the pin types OR do this using the MPLab MCC tool.
-void i2cSetup() {
-    __delay_us(10000); 
-
-    SCL_SetDigitalOutput();
-    SDA_SetDigitalOutput();
-    SCL_SetOpenDrain();
-    SDA_SetOpenDrain();
-    SDA_SetPullup();
-    SCL_SetPullup();
-    SCL_ON;
-    SDA_ON;
-}
-
-/* i2c start sequence.
- * A high-to-low transition on the SDA line while the SCL is high defines a START condition 
- */
-void i2cStart(){
-    SDA_ON;
+void i2cStart(struct I2CPort* port){
+    port->sdaHi();
     dly();
-    SCL_ON;
+    port->sclHi();
     dly();
     
-    SDA_OFF;
+    port->sdaLo();
     dly();
-    SCL_OFF;
+    port->sclLo();
     dly();
 }
 
-void i2cClockStretch() {
+void i2cClockStretch(struct I2CPort* port) {
     // added clock stretching as shown here https://github.com/theisolinearchip/nesmini_usb_adapter/blob/main/i2cattiny85/i2cattiny85.c
     // if it's being pulled low but slave then wait
     do{
-    }while(readSCL() == 0);  
+    }while(port->sclRead() == 0);  
 }
 
-/* i2c stop sequence.
- * A low-to-high transition on the SDA line while the SCL is high defines a STOP condition.
-*/
-void i2cStop(){
-    SDA_OFF;
+void i2cStop(struct I2CPort* port){
+    port->sdaLo();
     dly();
-    SCL_ON;
+    port->sclHi();
     dly();
     
-    i2cClockStretch();
+    i2cClockStretch(port);
     dly();
     
-    SDA_ON;
+    port->sdaHi();
     dly();
 }
 
-void i2cWriteBit(uint8_t bit){
-    if (bit) SDA_ON;
-    else SDA_OFF;
+void i2cWriteBit(struct I2CPort* port, uint8_t bit){
+    if (bit) port->sdaHi();
+    else port->sdaLo();
     dly();  
-    SCL_ON; 
+    
+    port->sclHi(); 
     dly();
     
-    i2cClockStretch();
-    dly();
+    i2cClockStretch(port);
     
-    SCL_OFF;
+    port->sclLo();
     dly();
 }
 
-/* Transmit 8 bit data to slave */
-bool i2cWrite(uint8_t dat){
+bool i2cWrite(struct I2CPort* port, uint8_t dat){
     
     // clock out 8 bits
     for(uint8_t i = 8; i; i--){
         uint8_t bit = (dat & 0x80); //Mask for the eight bit
         dat<<=1;  //Move 
         
-        i2cWriteBit(bit);
-        dly();
+        i2cWriteBit(port, bit);
     }
     
     // on 9th clock read back in the ack bit
-    SDA_ON; // port goes high - SDA is released
+    port->sdaHi(); // port goes high - SDA is released
     dly();
     
     // if receiver is acking by pulling SDA low then it must do so before the clock goes high and then remain stable during the high.
-    SCL_ON; 
+    port->sclHi(); 
     dly();
     
-    bool ack = readSDA();    // Acknowledge bit
+    bool ack = readSDA(port);    // Acknowledge bit
     
-    SCL_OFF;
+    port->sclLo();
     
     return ack;
 }
 
-
-uint8_t i2cReadBit(){
-    SDA_ON;
-    SCL_ON;
+uint8_t i2cReadBit(struct I2CPort* port){
+    // make sure SDA is released and clock a value onto the SDA line
+    port->sdaHi();
+    port->sclHi();
     dly();
 
-    i2cClockStretch();
-    dly();
+    i2cClockStretch(port);
     
-    uint8_t bit = readSDA();
+    uint8_t bit = port->sdaRead();
     
-    SCL_OFF;
+    port->sclLo();
     dly();
  
     return bit; 
@@ -205,23 +175,22 @@ uint8_t i2cReadBit(){
 // when reading send a low to ack to the slave that data has been received ie nack
 // if nack is low then a low will be sent to the slave - this is an ack.
 // during a read an ack (low) should be sent to signal the desire to read more.)
-uint8_t i2cRead(bool nack){
+uint8_t i2cRead(struct I2CPort* port, bool nack){
     uint8_t dat = 0;
-    SDA_ON;
+    port->sdaHi();
     for( uint8_t i =0; i<8; i++){
         dat <<= 1;
-        uint8_t bit = i2cReadBit();
+        uint8_t bit = i2cReadBit(port);
         if(bit) dat |=1;
     }
     
     // send a 0 bit (ie nack) if we want to read more  
-    i2cWriteBit(nack);
+    i2cWriteBit(port, nack);
 
     dly();
-    SCL_OFF;
-    SDA_ON;
+    port->sclLo();
+    port->sdaHi();
     return(dat); 
 }
-
 
 

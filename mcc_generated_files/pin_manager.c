@@ -57,7 +57,7 @@ void PIN_MANAGER_Initialize(void)
     /**
     LATx registers
     */
-    LATA = 0x00;
+    LATA = 0x20;
     LATB = 0x00;
     LATC = 0xC8;
 
@@ -78,9 +78,9 @@ void PIN_MANAGER_Initialize(void)
     /**
     WPUx registers
     */
-    WPUB = 0x00;
+    WPUB = 0x80;
     WPUA = 0x00;
-    WPUC = 0xC8;
+    WPUC = 0xC0;
 
     /**
     ODx registers

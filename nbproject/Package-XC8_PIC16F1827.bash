@@ -10,9 +10,9 @@ CND_CONF=XC8_PIC16F1827
 CND_DISTDIR=dist
 TMPDIR=build/${CND_CONF}/${IMAGE_TYPE}/tmp-packaging
 TMPDIRNAME=tmp-packaging
-OUTPUT_PATH=dist/${CND_CONF}/${IMAGE_TYPE}/seven_segment_driver.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
-OUTPUT_BASENAME=seven_segment_driver.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
-PACKAGE_TOP_DIR=sevensegmentdriver.x/
+OUTPUT_PATH=dist/${CND_CONF}/${IMAGE_TYPE}/NESInterfaceAndPeripherals.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
+OUTPUT_BASENAME=NESInterfaceAndPeripherals.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
+PACKAGE_TOP_DIR=nesinterfaceandperipherals.x/
 
 # Functions
 function checkReturnCode
@@ -57,15 +57,15 @@ mkdir -p ${TMPDIR}
 
 # Copy files and create directories and links
 cd "${TOP}"
-makeDirectory ${TMPDIR}/sevensegmentdriver.x/bin
+makeDirectory ${TMPDIR}/nesinterfaceandperipherals.x/bin
 copyFileToTmpDir "${OUTPUT_PATH}" "${TMPDIR}/${PACKAGE_TOP_DIR}bin/${OUTPUT_BASENAME}" 0755
 
 
 # Generate tar file
 cd "${TOP}"
-rm -f ${CND_DISTDIR}/${CND_CONF}/package/sevensegmentdriver.x.tar
+rm -f ${CND_DISTDIR}/${CND_CONF}/package/nesinterfaceandperipherals.x.tar
 cd ${TMPDIR}
-tar -vcf ../../../../${CND_DISTDIR}/${CND_CONF}/package/sevensegmentdriver.x.tar *
+tar -vcf ../../../../${CND_DISTDIR}/${CND_CONF}/package/nesinterfaceandperipherals.x.tar *
 checkReturnCode
 
 # Cleanup

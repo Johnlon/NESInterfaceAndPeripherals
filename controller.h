@@ -1,34 +1,28 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
-/* 
-Lower 
-ex  1010 1111	BUTTONA | BUTTONB
-ex  1110 1111	BUTTONA
-bx  1011 1111 	BUTTONB
-Xc  1111 1100	LEFT | UP
-Xd  1111 1101	LEFT
-Xe  1111 1110  	UP
+#include "stdlib.h"
+#include "i2c.h"
+#include "i2cport.h"
 
 
-upper
-xb  1111 1011   START
+// Raw positions of the button signals in bytes 7 and 8 (combined as a 16 bit int))
+// signals as per http://spinalcode.co.uk/2018/08/14/wii-classic-controller-protocol/
+enum NESSignalBitMask {
+  // from byte 7
+  S_RIGHT     = (1 << 15), 
+  S_DOWN      = (1 << 14), 
+  S_SELECT    = (1 << 12), 
+  S_START     = (1 << 10), 
+  // from byte 8
+  S_BUTTONB   = (1 << 6),  
+  S_BUTTONA   = (1 << 4), 
+  S_LEFT      = (1 << 1), 
+  S_UP        = (1 << 0), 
+};
 
-2x  0010 1111   SEL |DN | R
-3x  0011 1111   DN  | R
-6x  0110 1111   SEL | R
-7x  0111 1111   R
-Ax  1010 1111   SEL | DN
-Ax  1011 1111   DN
-Ex  1110 1111   SEL
-
-
-15 14  13 12  11 10    9  8    7  6  5  4  3  2  1  0
-R  D   _  SEL _  START _  _    _  B  _  A  _  _  L  U
- 
- */
-
-enum Controller_State {
+/* mapping of the buttons into their position in the 8 bit response */
+enum ControllerOutputBits {
   UP        = (1 << 0), 
   DOWN      = (1 << 1), 
   LEFT      = (1 << 2), 
@@ -40,23 +34,10 @@ enum Controller_State {
 };
 
 
-enum Signal_Pos {
-  S_UP        = (1 << 0), 
-  S_LEFT      = (1 << 1), 
-  S_BUTTONA   = (1 << 4), 
-  S_BUTTONB   = (1 << 6),  
-  S_DOWN      = (1 << 14), 
-  S_RIGHT     = (1 << 15), 
-  S_SELECT    = (1 << 12), 
-  S_START     = (1 << 10), 
-};
-
-
-
-void controller_id(uint8_t id[6]);
-int16_t controller_state_raw(void);
-uint8_t controller_state(void);
-void controller_disable_encryption(void);
-void controller_init(void);
-
+void controller_id(struct I2CPort* port, uint8_t id[6]);
+int16_t controller_state_raw(struct I2CPort* port);
+uint8_t controller_state(struct I2CPort* port);
+void controller_disable_encryption(struct I2CPort* port);
+void controller_init(struct I2CPort* port);
 #endif
+
