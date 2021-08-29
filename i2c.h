@@ -6,8 +6,10 @@
 
 #include "xc.h"
 
+
+bool longDelay=true;
+
 struct I2CPort {
-    void ((*setup))(void);
     void ((*sdaHi)(void));
     void ((*sdaLo)(void));
     void ((*sclHi)(void));

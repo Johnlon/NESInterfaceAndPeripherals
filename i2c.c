@@ -78,11 +78,11 @@ uint8_t readSCL(struct I2CPort* port) {
 }
 
 void dly(){
-    __delay_us(40);
+    __delay_us(1);
 }
 
 void dlyLong(){
-    __delay_us(1000);
+    __delay_us(100);
 }
 
 void i2cStart(struct I2CPort* port){

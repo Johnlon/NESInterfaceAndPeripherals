@@ -9,6 +9,7 @@
 #include "controller.h"
 
 void output(uint8_t out);
+uint8_t rand8(void);
 
 #define PORT_FN_DEF(PORTNO) \
  \
@@ -64,7 +65,6 @@ uint8_t port## PORTNO ##SCLGetValue(void) { \
 } \
  \
 void port_callbacks_init## PORTNO(struct I2CPort* port) { \
-    port->setup = port## PORTNO ##Setup; \
     port->sdaHi = port## PORTNO ##SdaHi; \
     port->sdaLo = port## PORTNO ##SdaLo; \
     port->sclHi = port## PORTNO ##SclHi; \
@@ -80,9 +80,64 @@ void port_callbacks_init## PORTNO(struct I2CPort* port) { \
 PORT_FN_DEF(1)
 PORT_FN_DEF(2)
 
+void setupShiftPort() {
+    OUT_SCLK_SetPushPull();
+    OUT_SCLK_SetDigitalOutput();
+    OUT_SCLK_SetHigh();
+    
+    OUT_RCLK_SetPushPull();
+    OUT_RCLK_SetDigitalOutput();
+    OUT_RCLK_SetHigh();
+    
+    OUT_DATA1_SetPushPull();
+    OUT_DATA1_SetDigitalOutput();
+    OUT_DATA1_SetLow();
+    
+    OUT_DATA2_SetPushPull();
+    OUT_DATA2_SetDigitalOutput();
+    OUT_DATA2_SetLow();
+    
+    OUT_DATA3_SetPushPull();
+    OUT_DATA3_SetDigitalOutput();
+    OUT_DATA3_SetLow();
+}
+
+void serialClock() {
+    OUT_SCLK_SetLow();
+    dly();
+    OUT_SCLK_SetHigh();
+    dly();
+}
+
+void serialLatch() {
+    OUT_RCLK_SetLow();
+    dly();
+    OUT_RCLK_SetHigh();
+    dly();
+}
+
+void shiftOut(uint8_t value0, uint8_t value1, uint8_t value2) {
+    
+    for (int i = 7; i >= 0; i--) {
+        OUT_DATA1_LAT = (value0 & 0x80) ? 1: 0;
+        OUT_DATA2_LAT = (value1 & 0x80) ? 1: 0;
+        OUT_DATA3_LAT = (value2 & 0x80) ? 1: 0;
+
+        value0 = (uint8_t)(value0 << 1);
+        value1 = (uint8_t)(value1 << 1);
+        value2 = (uint8_t)(value2 << 1);
+        
+        serialClock();
+    }
+    serialLatch();
+}
+
     
 void main(void) {
-    SYSTEM_Initialize();
+   SYSTEM_Initialize();
+    
+    // skip a little time to allow controller to power up
+    __delay_ms(100);
     
     port1Setup();
     port2Setup();
@@ -92,11 +147,8 @@ void main(void) {
     port_callbacks_init1(&port1);
     port_callbacks_init2(&port2);
         
-    port1.setup();
-    
-    // wait a couple of secs before trying to talk to controller
-    //__delay_ms(2*1000);
-    
+    setupShiftPort();
+            
     uint8_t id[6];
     controller_disable_encryption(&port1);
     controller_init(&port1);
@@ -106,21 +158,21 @@ void main(void) {
     controller_init(&port2);
     controller_id(&port2, id);
 
+    // program starts with a slow I2C clock and we do init slowly - seems to make startup more reliable
+    // switch from slow speed to higher speed.
     
     while (1) {
       
-        //randUpdate();
-        uint8_t state;
+        uint8_t state1 = controller_state(&port1); 
+        output(state1);
         
-        state = controller_state(&port1); 
-        output(state); 
-        state = controller_state(&port2); 
-        output(state); 
+        uint8_t state2 = controller_state(&port2); 
+        output(state2); 
+    
+        uint8_t state3 = rand8();
+        shiftOut(state1, state2, state3); 
     }
 }
-
-
-
 
 void output(uint8_t out) {
     RAND_0_LAT = (out & 1);
@@ -134,9 +186,8 @@ void output(uint8_t out) {
 
 }
 
-void randUpdate() {
-    uint8_t r = (uint8_t)(rand() % 256);
-    output(r);
+uint8_t rand8() {
+    return  (uint8_t)(rand() % 256);
 }
 
 /**
