@@ -78,7 +78,7 @@ void PIN_MANAGER_Initialize(void)
     /**
     WPUx registers
     */
-    WPUB = 0x80;
+    WPUB = 0xC0;
     WPUA = 0x00;
     WPUC = 0xC0;
 
@@ -86,8 +86,8 @@ void PIN_MANAGER_Initialize(void)
     ODx registers
     */
     ODCONA = 0x00;
-    ODCONB = 0x00;
-    ODCONC = 0xC8;
+    ODCONB = 0xC0;
+    ODCONC = 0xC0;
 
     /**
     SLRCONx registers
