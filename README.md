@@ -53,8 +53,6 @@ The entry point to the program is [_main.c_](https://raw.githubusercontent.com/J
 
 The main loop reads reads the state of each of two NES I2C controllers and generates an 8 bit random number and publishes the three values to the three shift register outputs for consumption but a CPU bus.
 
-![Main](IDE-main.png)
-
 **controller.c**
 
 This file contains the high level functions needed to send and receive from the NES controllers. The controllers speak I2C as their low level protocol however there is a specific set of I2C messages that must be sent to the controllers to initialise them and also to read from them. All this logic is within controller.c.
