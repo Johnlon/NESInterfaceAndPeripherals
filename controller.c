@@ -13,7 +13,7 @@
 
 // see https://github.com/theisolinearchip/nesmini_usb_adapter/blob/main/nesminicontrollerdrv.c
 // https://github.com/djtulan/nunchuk64/blob/master/src/controller.c
-void controller_init(struct I2CPort* port) {
+void controllerInit(struct I2CPort* port) {
 
 	// According to http://wiibrew.org/wiki/Wiimote/Extension_Controllers the way to initialize the
 	// SNES Mini Controller is by writting 0x55 to 0xF0 and 0x00 to 0xFB BUT it seems it works only
@@ -46,7 +46,7 @@ void controller_init(struct I2CPort* port) {
 /* https://wiibrew.org/wiki/Wiimote/Extension_Controllers
  The key is written in 3 blocks of 6, 6, and 4 bytes.
  */
-void controller_disable_encryption(struct I2CPort* port) {
+void controllerDisableEncryption(struct I2CPort* port) {
        
 	i2cWrite(port,CONTROLLER_ADDR | I2C_WRITE); 
 	i2cWrite(port,0xF0); // "address"
@@ -82,7 +82,7 @@ void controller_disable_encryption(struct I2CPort* port) {
 /* see read_id https://github.com/djtulan/nunchuk64/blob/master/src/controller.c
  got : 0x01 0x00 0xa4 0x20 0x00 0x01 =   ID_NES_Classic_Mini_Clone_Encrypted
  **/
-void controller_id(struct I2CPort* port, uint8_t id[6]) {
+void controllerId(struct I2CPort* port, uint8_t id[6]) {
 
     i2cStart(port);
 	i2cWrite(port,CONTROLLER_ADDR | I2C_WRITE); 
@@ -103,9 +103,9 @@ void controller_id(struct I2CPort* port, uint8_t id[6]) {
     dly(); 
 }
 
-uint8_t controller_state(struct I2CPort* port) {
+uint8_t controllerState(struct I2CPort* port) {
     // result is active low 
-    int state = controller_state_raw(port);
+    int state = controllerStateRaw(port);
     
     // also active low
     uint8_t padValue = 0;
@@ -140,7 +140,7 @@ uint8_t controller_state(struct I2CPort* port) {
     return padValue ^ 0xff;
 }
 
-int16_t controller_state_raw(struct I2CPort* port) {
+int16_t controllerStateRaw(struct I2CPort* port) {
 	i2cStart(port);
 
 	i2cWrite(port,CONTROLLER_ADDR | I2C_WRITE); // write

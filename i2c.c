@@ -64,16 +64,16 @@ not ready to start communication with the master.
  */
 uint8_t readSDA(struct I2CPort* port) {
     // read the state of the SDA pin. if it's low then then the slave is pulling it low    
-    port->sdaInput();
+    port->sdaSetAsInput();
     bool val = port->sdaRead();
-    port->sdaOutput();
+    port->sdaSetAsOutput();
     return val;
 }
 
 uint8_t readSCL(struct I2CPort* port) {    
-    port->sclInput();
+    port->sclSetAsInput();
     bool val = port->sclRead();    // Acknowledge bit
-    port->sclOutput();
+    port->sclSetAsOutput();
     return val;
 }
 

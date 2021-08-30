@@ -34,10 +34,10 @@ enum ControllerOutputBits {
 };
 
 
-void controller_id(struct I2CPort* port, uint8_t id[6]);
-int16_t controller_state_raw(struct I2CPort* port);
-uint8_t controller_state(struct I2CPort* port);
-void controller_disable_encryption(struct I2CPort* port);
-void controller_init(struct I2CPort* port);
+void controllerId(struct I2CPort* port, uint8_t id[6]);
+int16_t controllerStateRaw(struct I2CPort* port);
+uint8_t controllerState(struct I2CPort* port);
+void controllerDisableEncryption(struct I2CPort* port);
+void controllerInit(struct I2CPort* port);
 #endif
 

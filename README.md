@@ -1,65 +1,94 @@
 # NES Interface & Peripherals
 
-This project is a peripheral for the SPAM-1 CPU containing a NES gamepad to parallel interface, a random number generator, some 8 bit timers and a basic sound generator.
-These are implemented using a microcontroller PIC16F18446.
+This project is a peripheral adapter for the [SPAM-1 CPU](https://hackaday.io/project/166922-spam-1-8-bit-cpu).
+
+SPAM-1 is a homebrew 'TTL CPU', and you can see the SPAM-1 git repo in my repository but also take a look at it's youtube videos and the Hackaday project. Ironically this microcontroller has vastly more power than my massive homebrew TTL CPU.
+
+This adapter provides an interface for NES gamepads by translating between the I2C protocol of the NES devices and the parallel bus of SPAM-1. SPAM-1 also needs a random number generator so this project also provides a source of random numbers.
+
+# NES Controller Type
+
+This implementation works with the NES Mini gamepad clones that I got off eBay. The controllers do not behave exactly like a genuine controller as they only support "data format 3" which is a high precision version of the NES protocol intended for use with joysticks. Other impl's suggest that genuine controllers will support data format 1. This difference has an impact on how to read the controller. In data format 1 the response from the controller takes 6 bytes where the button data is in bytes 5 and 6, whereas in data format 3 the response is 8 bytes and the button data in bytes 7 and 8. 
+
+If you are using this code with a genuine controller and this code doesn't work then try changing the read function to pull 6 bytes istead of 8.
+
+# Hardware
+
+The core of the adapter is a PIC16F18446 microcontroller and in each case the interface back to SPAM-1 is a 74HC595 shift register. The shift registers are needed because it makes the interface back to SPAM-1 easy. The tristate output enable of each of the three shift registers can be addressed by a single control line from SPAM-1 and as there are a bunch of unused outputs on the PIC micro (labelled DATA_0-7 in the image) I might add some more shift registers later if I can figure out what additional functions to add. 
+
 
 PIC16F18446 Datasheet: https://ww1.microchip.com/downloads/en/DeviceDoc/40001985B.pdf
 
-I'm building this module for use in a homebrew TTL CPU that I'm building called SPAM-1, and you can see the SPAM-1 git repo in my repository but also take a look at it's youtube videos and the Hackaday project. Ironically this microcontroller has vastly more power than my massive homebrew TTL CPU.
-
+The pinout I've configured is as follows ...
 
 | PIN        | Notes |
 | ---------- | ----- |
 | VDD        | +ve   |
-| _RDNES1    | display the value of NES pad 1 on the parallel port |
-| _RDNES2    | display the value of NES pad 2 on the parallel port |
-| MCLR       | reset |
-| NES_CLK    | clk output to both NES pads |
-| NES_LATCH  | latch output to both NES pads |
-| NES_DATA_1 | data input from NES pad 1 |
-| NES_DATA_2 | data input from NES pad 2 |
-| ADCIN      | data input to ADC |
-| _RDADC     | display the value of the ADC on the paralel port |
-| NU         | not used |
-| DATA0-7    | parallel data outputs - thee are froxen during any period where one of the _RDxxx is enabled |
+| OUT_RCLK   | shift register letch signal |
+| OUT_DATA3  | shift register data out - random number out |
+| MCLR       | reset / proogramming pin |
+| OUT_DATA2  | shift register data out - NES controller 2|
+| OUT_DATA1  | shift register data out - NES controller 1 |
+| OUT_SCLK   | shift register serial clock |
+| SDA1       | I2C data in/out - NES controller 1 |
+| SCL1       | I2C clock out - NES controller 1 |
+| SDA2       | I2C data in/out - NES controller 2 |
+| SCL2       | I2C clock out - NES controller 3 |
+| DATA_0-7   | spare GPIO |
+| VSS        | 0v |
 
 
-![pinout](pinout.png)
-
+![Configurator view](pin-config.png)
 
 Project Structure
 ----
 
-The user code is in [_main.c_](https://raw.githubusercontent.com/Johnlon/NESInterfaceAndPeripherals/main/main.c).
+**main.c**
 
+The entry point to the program is [_main.c_](https://raw.githubusercontent.com/Johnlon/NESInterfaceAndPeripherals/main/main.c).
 
-UPDATE THIS DOCO ......
-
-
-This is a straightforward loop that reads the 8 bit data input and then decides which of the seven segment output bits to turn on/off to light the LED's, and also it multiplexes the two digits by applying a low to the DIGIT_L or DIGIT_H pins to select which digit is lit (low to light the digit).
+The main loop reads reads the state of each of two NES I2C controllers and generates an 8 bit random number and publishes the three values to the three shift register outputs for consumption but a CPU bus.
 
 ![Main](IDE-main.png)
 
-The rest of the files are mostly generated.
+**controller.c**
 
-The code generation is driven by the MPLab Configurator app that is accessible from the menus.
+This file contains the high level functions needed to send and receive from the NES controllers. The controllers speak I2C as their low level protocol however there is a specific set of I2C messages that must be sent to the controllers to initialise them and also to read from them. All this logic is within controller.c.
 
+**i2c.c**
+
+This file contains the low level "bit banged" I2C implementation. This is an entirely reusable implementation that any other project that needs a software implementation of I2C on a PIC micro can use.
+
+The header file i2c.h contains the defintion of the I2C data structures and a bunch of functions needed to manipulate the pins to implement the I2C protocol. This file also contains a factory function for each I2C port.
+
+The various port functions are created by a call to macro _PORT_FN_DEF(portno)_. So for instance as I have two ports I need to call this macro in main.c twice as _PORT_FN_DEF(1)_ and _PORT_FN_DEF(2)_. This macro assumes that the pins for the I2C port has been named SCL1/SDA1, SCL2/SDA2 and so on.
+
+
+**Other files**
+
+The rest of the files are mostly generated by the PIC MPLAB X IDE project configurator.
+
+The configurator can be access from the IDE's config menu:
 ![Configurator menu](config-menu.png)
 
 Using the pin configurator "Pin Manager" grid shown at the bottom of the IDE in the image below, I set the pins as being GPIO inputs or outputs.
 
-Once the config has been decided the hit the _Generate_ button to recreate the config code.
+Once the config has been decided the hit the _Generate_ button to recreate the config code. 
 
-I used the facilities shown below to setup the config. I used the "Pin Module" to uncheck "Analog" on all pins and then renamed the pins to the symbolic names that represents their function. These names show up in the generated code, for example _SEG_A_ for segment 'A'. I also set the two multiplexing pins to start with logic high. This is so that the two digits will be unlit until the microcontroller starts it's program loop. I also turned on the pull ups on the inputs so that they were firmly at a well known value when unconnected rather than floating. 
+It's worth observing however that once I had figured out how to use the MPLAB IDE and also how to do the bit-banging of the I2C protocol in the controller.c I decided do all the pin configuration in code instead. The createPort functions configure the pins as open drain with pull-ups enabled as this is the required config for I2C devices. 
 
-![Configurator view](pin-config.png)
+NES and I2C Protocols
+-----
 
+Whilst this thing seems to work in the actual hardware I'm not very sure about any subtleties in the protocol. 
 
-Hardware and Software Components
+Certain implementations I've seen do retries on the messaging to the NES device based on failed I2C Acks but I haven't figured that out yet. However, I've not had any issues despite this lack. 
+
+The NES controllers I have as clones of the NES mini controllers and these behave differently to
+
+Links
 ------
 
-PCB: https://oshwlab.com/john.lonergan.sharing/7-segment-display-module-using-pic16f18446-microcontroller
+Git repo : https://github.com/Johnlon/NESInterfaceAndPeripherals
 
-Git repo : https://github.com/Johnlon/SevenSegmentModule
-
-Hackaday : https://hackaday.io/project/178227-7-segment-module-using-pic16f18446
+Hackaday : https://hackaday.io/project/181036-nes-controller-interface-using-pic16f18446

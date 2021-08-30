@@ -11,72 +11,6 @@
 void output(uint8_t out);
 uint8_t rand8(void);
 
-#define PORT_FN_DEF(PORTNO) \
- \
-void port## PORTNO ##SdaHi(void) { \
-    SDA## PORTNO ##_LAT=1; \
-} \
- \
-void port## PORTNO ##SdaLo(void) { \
-    SDA## PORTNO ##_LAT=0; \
-} \
- \
-void port## PORTNO ##SclHi(void) { \
-    SCL## PORTNO ##_LAT=1; \
-} \
- \
-void port## PORTNO ##SclLo(void) { \
-    SCL## PORTNO ##_LAT=0; \
-} \
- \
-void port## PORTNO ##SCLSetDigitalInput(void) { \
-    SCL## PORTNO ##_SetDigitalInput(); \
-} \
- \
-void port## PORTNO ##SCLSetDigitalOutput(void) { \
-    SCL## PORTNO ##_SetDigitalOutput(); \
-} \
- \
-void port## PORTNO ##SDASetDigitalInput(void) { \
-    SDA## PORTNO ##_SetDigitalInput(); \
-} \
- \
-void port## PORTNO ##SDASetDigitalOutput(void) { \
-    SDA## PORTNO ##_SetDigitalOutput(); \
-} \
- \
-uint8_t port## PORTNO ##SDAGetValue(void) { \
-    return SDA## PORTNO ##_GetValue(); \
-} \
- \
-uint8_t port## PORTNO ##SCLGetValue(void) { \
-    return SCL## PORTNO ##_GetValue(); \
-} \
- \
- void port## PORTNO ##Setup() { \
-    SCL## PORTNO ##_SetDigitalOutput(); \
-    SDA## PORTNO ##_SetDigitalOutput(); \
-    SCL## PORTNO ##_SetOpenDrain(); \
-    SDA## PORTNO ##_SetOpenDrain(); \
-    SDA## PORTNO ##_SetPullup(); \
-    SCL## PORTNO ##_SetPullup(); \
-    SCL## PORTNO ##_SetHigh(); \
-    SDA## PORTNO ##_SetHigh();  \
-} \
- \
-void port_callbacks_init## PORTNO(struct I2CPort* port) { \
-    port->sdaHi = port## PORTNO ##SdaHi; \
-    port->sdaLo = port## PORTNO ##SdaLo; \
-    port->sclHi = port## PORTNO ##SclHi; \
-    port->sclLo = port## PORTNO ##SclLo; \
-    port->sclInput = port## PORTNO ##SCLSetDigitalInput; \
-    port->sclOutput = port## PORTNO ##SCLSetDigitalOutput; \
-    port->sdaInput = port## PORTNO ##SDASetDigitalInput; \
-    port->sdaOutput = port## PORTNO ##SDASetDigitalOutput; \
-    port->sclRead = port## PORTNO ##SCLGetValue; \
-    port->sdaRead = port## PORTNO ##SDAGetValue;     \
-}
-
 PORT_FN_DEF(1)
 PORT_FN_DEF(2)
 
@@ -139,34 +73,29 @@ void main(void) {
     // skip a little time to allow controller to power up
     __delay_ms(100);
     
-    port1Setup();
-    port2Setup();
-    
-    struct I2CPort port1, port2;
-
-    port_callbacks_init1(&port1);
-    port_callbacks_init2(&port2);
-        
+    struct I2CPort port1 = createPort1();
+    struct I2CPort port2 = createPort2();
+       
     setupShiftPort();
             
     uint8_t id[6];
-    controller_disable_encryption(&port1);
-    controller_init(&port1);
-    controller_id(&port1, id);
+    controllerDisableEncryption(&port1);
+    controllerInit(&port1);
+    controllerId(&port1, id);
 
-    controller_disable_encryption(&port2);
-    controller_init(&port2);
-    controller_id(&port2, id);
+    controllerDisableEncryption(&port2);
+    controllerInit(&port2);
+    controllerId(&port2, id);
 
     // program starts with a slow I2C clock and we do init slowly - seems to make startup more reliable
     // switch from slow speed to higher speed.
     
     while (1) {
       
-        uint8_t state1 = controller_state(&port1); 
+        uint8_t state1 = controllerState(&port1); 
         output(state1);
         
-        uint8_t state2 = controller_state(&port2); 
+        uint8_t state2 = controllerState(&port2); 
         output(state2); 
     
         uint8_t state3 = rand8();
@@ -175,14 +104,14 @@ void main(void) {
 }
 
 void output(uint8_t out) {
-    RAND_0_LAT = (out & 1);
-    RAND_1_LAT = (out & 2) >> 1;
-    RAND_2_LAT = (out & 4) >> 2;
-    RAND_3_LAT = (out & 8) >> 3;
-    RAND_4_LAT = (out & 16) >> 4;
-    RAND_5_LAT = (out & 32) >> 5;
-    RAND_6_LAT = (out & 64) >> 6;
-    RAND_7_LAT = (out & 128) >> 7;
+    DATA_0_LAT = (out & 1);
+    DATA_1_LAT = (out & 2) >> 1;
+    DATA_2_LAT = (out & 4) >> 2;
+    DATA_3_LAT = (out & 8) >> 3;
+    DATA_4_LAT = (out & 16) >> 4;
+    DATA_5_LAT = (out & 32) >> 5;
+    DATA_6_LAT = (out & 64) >> 6;
+    DATA_7_LAT = (out & 128) >> 7;
 
 }
 
