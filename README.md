@@ -6,15 +6,19 @@ SPAM-1 is a homebrew 'TTL CPU', and you can see the SPAM-1 git repo in my reposi
 
 This adapter provides an interface for NES gamepads by translating between the I2C protocol of the NES devices and the parallel bus of SPAM-1. SPAM-1 also needs a random number generator so this project also provides a source of random numbers.
 
+# Bit-Banged I2C Implementation
+
+I couldn't find a bit-banged I2C impl for the PIC micro so I did the research and wrote my own. The I2C impl in this repo ought to be reusable by and PIC micro. It could probably be adapter to other micro's if needed with very little effort.
+
 # NES Controller Type
 
 This implementation works with the NES Mini gamepad clones that I got off eBay. The controllers do not behave exactly like a genuine controller as they only support "data format 3" which is a high precision version of the NES protocol intended for use with joysticks. Other impl's suggest that genuine controllers will support data format 1. This difference has an impact on how to read the controller. In data format 1 the response from the controller takes 6 bytes where the button data is in bytes 5 and 6, whereas in data format 3 the response is 8 bytes and the button data in bytes 7 and 8. 
 
 If you are using this code with a genuine controller and this code doesn't work then try changing the read function to pull 6 bytes istead of 8.
 
-# Bit-Banged I2C Implementation
+The diagram below illustrates a full cycle where we read the controller and then write the value out to the shift register.
 
-I couldn't find a bit-banged I2C impl for the PIC micro so I did the research and wrote my own. The I2C impl in this repo ought to be reusable by and PIC micro. It could probably be adapter to other micro's if needed with very little effort.
+![Read Cycle timing](logic-analyser.png)
 
 # Hardware
 

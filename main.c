@@ -62,7 +62,7 @@ void shiftOut(uint8_t value0, uint8_t value1, uint8_t value2) {
         value2 = (uint8_t)(value2 << 1);
         
         serialClock();
-    }
+    } 
     serialLatch();
 }
 
@@ -95,11 +95,11 @@ void main(void) {
         uint8_t state1 = controllerState(&port1); 
         output(state1);
         
-        uint8_t state2 = controllerState(&port2); 
-        output(state2); 
-    
+//        uint8_t state2 = controllerState(&port2); 
+//        output(state2); 
+//    
         uint8_t state3 = rand8();
-        shiftOut(state1, state2, state3); 
+        shiftOut(state1, state1, state3); 
     }
 }
 
