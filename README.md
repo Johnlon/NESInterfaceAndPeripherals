@@ -12,6 +12,10 @@ This implementation works with the NES Mini gamepad clones that I got off eBay. 
 
 If you are using this code with a genuine controller and this code doesn't work then try changing the read function to pull 6 bytes istead of 8.
 
+# Bit-Banged I2C Implementation
+
+I couldn't find a bit-banged I2C impl for the PIC micro so I did the research and wrote my own. The I2C impl in this repo ought to be reusable by and PIC micro. It could probably be adapter to other micro's if needed with very little effort.
+
 # Hardware
 
 The core of the adapter is a PIC16F18446 microcontroller and in each case the interface back to SPAM-1 is a 74HC595 shift register. The shift registers are needed because it makes the interface back to SPAM-1 easy. The tristate output enable of each of the three shift registers can be addressed by a single control line from SPAM-1 and as there are a bunch of unused outputs on the PIC micro (labelled DATA_0-7 in the image) I might add some more shift registers later if I can figure out what additional functions to add. 
