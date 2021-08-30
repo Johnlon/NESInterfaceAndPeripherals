@@ -1,7 +1,6 @@
 #include "xc.h"
 #include "mcc_generated_files/mcc.h"
 #include "i2c.h"
-#include "controller.h"
 
 #define I2C_WRITE 0
 #define I2C_READ 1
