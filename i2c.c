@@ -6,8 +6,6 @@
 #define I2C_WRITE 0
 #define I2C_READ 1
 
-#define CONTROLLER_ADDR (0x52 << 1)
-
 // https://github.com/theisolinearchip/nesmini_usb_adapter
 // http://www.bitbanging.space/posts/bitbang-i2c
 // https://www.robot-electronics.co.uk/i2c-tutorial

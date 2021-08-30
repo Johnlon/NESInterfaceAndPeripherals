@@ -82,7 +82,7 @@ struct I2CPort {
        SDA## PORTNO ##_SetHigh();  \
     } \
     \
-    struct I2CPort createPort## PORTNO ##() { \
+    struct I2CPort createPort## PORTNO() { \
        struct I2CPort port; \
        SCL## PORTNO ##_SetDigitalOutput(); \
        SDA## PORTNO ##_SetDigitalOutput(); \
