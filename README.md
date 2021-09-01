@@ -1,4 +1,4 @@
-# NES Interface & Peripherals
+# NES Interface & Peripherals (or how I bit banged the I2C protocol on a PIC micro)
 
 This project is a peripheral adapter for the [SPAM-1 CPU](https://hackaday.io/project/166922-spam-1-8-bit-cpu).
 
