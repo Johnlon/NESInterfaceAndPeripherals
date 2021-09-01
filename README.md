@@ -108,26 +108,26 @@ A4 is calculated as 0x52 shifted one bit to the left and then the lowest bit lef
 
 We then emit bytes to write 0xAA to the 0xF0 register which I believe instructs the controller to get ready to receive a sequence of bytes that are the encryption key to use for comms. 
 
-_Start 0xA4 0xF0 0xAA Stop_
+    Start 0xA4 0xF0 0xAA Stop
 
 Setting these encryption bytes to 0x00 disables encryption. We need to send two groups of 6 zeros and the a group of 4 zeros. Before each group we again send 0xA4 to indicate the I2C devices we're going to write to and also 0x40 to indicate the address of the register we're going to write the zeros to.
 
-_Start 0xA4 0x40 0x00 0x00 0x00 0x00 0x00 0x00 Stop_
+    Start 0xA4 0x40 0x00 0x00 0x00 0x00 0x00 0x00 Stop
 
-_Start 0xA4 0x40 0x00 0x00 0x00 0x00 0x00 0x00 Stop_
+    Start 0xA4 0x40 0x00 0x00 0x00 0x00 0x00 0x00 Stop
 
-_Start 0xA4 0x40 0x00 0x00 0x00 0x00 Stop_
+    Start 0xA4 0x40 0x00 0x00 0x00 0x00 Stop
 
 ## Initialisation
 
 I'm not sure what all the registers being written to below actually do.
 Sending 0xA4 as above signals a write to the I2C address 0x52 and then we write 0x55 to reg 0xF0 and so on as shown below.
 
-_Start 0xA4 0xF0 0x55 Stop_
+    Start 0xA4 0xF0 0x55 Stop
 
-_Start 0xA4 0xFB 0x00 Stop_
+    Start 0xA4 0xFB 0x00 Stop
 
-_Start 0xA4 0xFE 0x03 Stop_
+    Start 0xA4 0xFE 0x03 Stop
 
 The one register that I could find some info on is 0xFE and this register holds the value that determines which "data format" is used for the comms. There are data formats 0,1,2 & 3 at least but my clone controllers only do format 3 regardless of the value of 0xFE but as shown above I set that register to 3 in any case so it's consistent at least.
 
@@ -145,11 +145,11 @@ This function returns some descriptive info about the controller.
 
 Send 0xA4 to signal a write and then send 0xFA to signal that I will subsequently be reading from this register.
 
-_Start 0xA4 0xFA Stop_
+    Start 0xA4 0xFA Stop
 
 Now to do the I first need to send a Start and then 0xA5 which is calculated as 0x52 shifted one place to the left and this set the lower bit to 1 to indicate we are going to be reading not writing. We then read some bytes and close by sending a Stop signal.
 
-_Start 0xA5 <<now read 6 bytes>> Stop_
+    Start 0xA5 <<now read 6 bytes>> Stop
 
 I didn't find much doco on what these 6 identity bytes mean other than the 5th byte being the controller's current data format. This I found is unreliable as I can set this value to anything during initialisation and I always get data format 3 responses. I know nothing about the meaning of the other bytes in the response.
 
@@ -166,11 +166,11 @@ Any other info on the format would be great but I gound nothing anywhere.
 
 Send a write to register 0x00.
 
-_Start 0xFA 0x00 Stop_
+    Start 0xFA 0x00 Stop
 
 The start a read by sending 0xA5 then read 8 bytes of controller state. The 8 bytes being data format 3.
 
-_Start 0xA5 <<Read 8 bytes>> Stop_
+    Start 0xA5 <<Read 8 bytes>> Stop
 
 The last two bytes of this 8 bytes response are active low bits that map directly to which buttons are currently pressed.
 
