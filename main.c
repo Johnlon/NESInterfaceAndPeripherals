@@ -87,19 +87,16 @@ void main(void) {
     controllerInit(&port2);
     controllerId(&port2, id);
 
-    // program starts with a slow I2C clock and we do init slowly - seems to make startup more reliable
-    // switch from slow speed to higher speed.
-    
     while (1) {
       
         uint8_t state1 = controllerState(&port1); 
         output(state1);
         
-//        uint8_t state2 = controllerState(&port2); 
-//        output(state2); 
-//    
+        uint8_t state2 = controllerState(&port2); 
+        output(state2); 
+        
         uint8_t state3 = rand8();
-        shiftOut(state1, state1, state3); 
+        shiftOut(state1, state2, state3); 
     }
 }
 
